@@ -6,6 +6,13 @@ import matplotlib.pyplot as plt
 
 from scipy import signal
 
+            
+####DIAGNOSTICS NOT IN USE
+#import matplotlib._pylab_helpers
+#from memory_profiler import profile
+
+
+
 def gkern(kernlen=34, nsig=5.5):
     """Returns a 2D Gaussian kernel array."""
     gkern1d = signal.gaussian(kernlen, std=nsig).reshape(kernlen, 1)
@@ -77,7 +84,6 @@ def plot_GD_result(filtered, metric, ax):
     im = ax.imshow(filtered, cmap='gray_r')
     plt.colorbar(im, ax=ax,fraction=0.026, pad=0.04)
     ax.set_title('Metric is {:.3f}'.format(metric))
-
 
 def do_cutouts(path_to_image,
                threshold_fraction=0.15,
@@ -197,6 +203,7 @@ def do_cutouts(path_to_image,
                 
                 metrics.append(metric)
                 cv2.putText(image, '{0:.0f}'.format(metric), (x,y),cv2.FONT_HERSHEY_DUPLEX, 2, (255, 255, 255), 3)
+                del image_i
             else:
                 cv2.rectangle(image,(x,y),(x+w,y+h),(0,0,255),5)
                 cv2.putText(image, 'x', (x,y),cv2.FONT_HERSHEY_DUPLEX, 2, (255, 255, 255), 3)
@@ -235,8 +242,9 @@ def do_cutouts(path_to_image,
         return_fig=fig
         
 
-        
+    del fig
+    del image
+    del axs
                 
-                
-    return cuts,metrics,fig
+    return cuts,metrics,return_fig
             
