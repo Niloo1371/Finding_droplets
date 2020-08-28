@@ -6,10 +6,11 @@ import matplotlib.pyplot as plt
 
 from scipy import signal
 
-            
+import gc
+import pprint
 ####DIAGNOSTICS NOT IN USE
 #import matplotlib._pylab_helpers
-#from memory_profiler import profile
+from memory_profiler import profile
 
 
 
@@ -36,6 +37,8 @@ def kernel_from_d(d_um=2.2, scaling_factor=0.345):
     kernel = np.array(gkern(kernlen=cutoff, nsig=sigma))
 
     return kernel, sigma, cutoff
+
+
 
 def GD_metric(in_img, d_um=2.2, scaling_factor=0.345,g_gradient_x=None, g_gradient_y=None):
     '''input img in openCV format
@@ -77,6 +80,15 @@ def GD_metric(in_img, d_um=2.2, scaling_factor=0.345,g_gradient_x=None, g_gradie
         filtered_y))  # squared sum of each pixel
     # sum of all pixels, divided by the total number of pixels
     metric = np.divide(np.sum(filtered), src.size)
+    
+    del in_img
+    del src
+    del filtered_x
+    del filtered_y
+    del kernel_2d
+    del g_gradient_x
+    del g_gradient_y
+
     return metric, filtered
 
 
@@ -84,6 +96,7 @@ def plot_GD_result(filtered, metric, ax):
     im = ax.imshow(filtered, cmap='gray_r')
     plt.colorbar(im, ax=ax,fraction=0.026, pad=0.04)
     ax.set_title('Metric is {:.3f}'.format(metric))
+
 
 def do_cutouts(path_to_image,
                threshold_fraction=0.15,
@@ -129,6 +142,7 @@ def do_cutouts(path_to_image,
     image = cv2.imread(path_to_image)
     #image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
+    
     #calculate the focus metric
     metric, filtered = GD_metric(image,d_um=d_um,scaling_factor=scaling)
 
@@ -155,6 +169,9 @@ def do_cutouts(path_to_image,
     metrics=[]
     
     extra=0.5
+    contour=None
+    
+
     
     for c_index,contour in enumerate(contours):
         
@@ -227,11 +244,19 @@ def do_cutouts(path_to_image,
         ax_topright.contour(filtered,levels=[threshold],colors=['red'])
         plot_GD_result(filtered, metric, ax_topright)
 
-
         ax_bottomleft.set_title('distribution of focus metric, log scale')
         _=ax_bottomleft.hist(filtered.flatten(),bins=100)
         ax_bottomleft.plot([threshold,threshold],[0,ax_bottomleft.get_ylim()[1]],c='red')
-        ax_bottomleft.set_yscale('log')
+        
+        
+        
+        
+        
+        
+        
+        #print('')
+        #ax_bottomleft.set_yscale('log')
+        #print('')
 
         ax_midleft.set_title('after thresholding')
         ax_midleft.imshow(thresh,cmap='gray_r')
@@ -241,10 +266,50 @@ def do_cutouts(path_to_image,
         fig.tight_layout(rect=[0, 0, 1, 0.95])
         return_fig=fig
         
-
+    plt.close('all')
+    fig.clf()
     del fig
     del image
     del axs
-                
+       
+    for i in range(2):
+        print('Collecting %d ...' % i)
+        n = gc.collect()
+        print('Unreachable objects:', n)
+        print('Remaining Garbage:', )
+        pprint.pprint(gc.garbage)
+        print()
+
+    for i in range(2):
+        print('Collecting %d ...' % i)
+        n = gc.collect()
+        print('Unreachable objects:', n)
+        print('Remaining Garbage:', )
+        pprint.pprint(gc.garbage)
+        print()
+         
     return cuts,metrics,return_fig
+
+
+def do_stuff(full_path):
+    cuts,metrics,fig=do_cutouts(path_to_image=full_path,d_um=2.2,smallest_size_um2=10000,closing_kernel=30,threshold_fraction=0.15,show_diagnostics=True)
+    
+    plt.close('all')
+    
+    for i in range(2):
+        print('Collecting %d ...' % i)
+        n = gc.collect()
+        print('Unreachable objects:', n)
+        print('Remaining Garbage:', )
+        pprint.pprint(gc.garbage)
+        print()
+        
+    plt.close('all')
+    
+    del cuts
+    del metrics
+    del fig
+        
+    print('apa')
+    
             
