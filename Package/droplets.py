@@ -264,14 +264,15 @@ def do_cutouts(path_to_image,
         ax_midright.set_title('after closing')
         ax_midright.imshow(closing,cmap='gray_r')
         fig.tight_layout(rect=[0, 0, 1, 0.95])
-        return_fig=fig
         
-    plt.close('all')
-    fig.clf()
-    del fig
-    del image
-    del axs
-       
+    return_fig=fig
+        
+    #plt.close('all')
+    #fig.clf()
+    #del fig
+    #del image
+    #del axs
+    '''  
     for i in range(2):
         print('Collecting %d ...' % i)
         n = gc.collect()
@@ -279,16 +280,122 @@ def do_cutouts(path_to_image,
         print('Remaining Garbage:', )
         pprint.pprint(gc.garbage)
         print()
-
-    for i in range(2):
+    ''' 
+    '''    for i in range(2):
         print('Collecting %d ...' % i)
         n = gc.collect()
         print('Unreachable objects:', n)
         print('Remaining Garbage:', )
         pprint.pprint(gc.garbage)
-        print()
+        print()'''
          
     return cuts,metrics,return_fig
+
+def do_metrics(path_to_image,
+               threshold_fraction=0.15,
+               closing_kernel=30,
+               smallest_size_um2=10000,
+               d_um=2.2,
+               scaling=0.345):
+    '''input 
+    path_to_image path to image to do cutouts from
+    d_um is smallest feature detectable in image (resolution)
+    closing_kernel is the size of the closing kernel in pixels. 
+    smallest_size_um2 is the smallest area that will be cut out in um^2
+    scaling is the size of pixels in um
+    return_diagnostics if True will make a series of diagnostic plots
+    
+
+    The code will
+    1) load the image
+    2) calculate the gauusian derivative in each point, using sigma calculated from d_um and scaling
+    3) use the treshold fractio threshold_fraction together with a closing algorithm with size closing_kernel to determine contours
+    4) Cutout a rectangle around the outermost contours larger than smallest_size_um2
+    
+    Gaussian derivative method from 
+    Shah et. al, Identification of Robust Focus Measure Functions for the Automated Capturing of Focused Images from
+     Ziehl-Neelsen Stained Sputum Smear Microscopy Slide
+     and 
+    Geusebroek et. al, Robust Autofocusing in Microscopy
+
+    code written and developed by H.Olof Jönsson 2020, please 
+    credit (whatever paper we make) if using the code directly
+    
+    
+    return
+
+    metrics
+    
+    '''
+  
+    
+    #load image
+    image = cv2.imread(path_to_image)
+    #image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    
+    #calculate the focus metric
+    metric, filtered = GD_metric(image,d_um=d_um,scaling_factor=scaling)
+
+    #calcualte the threshold value
+    threshold=np.max(filtered)*threshold_fraction
+    if threshold<10000:
+        threshold=10000
+    #threshold=np.median(filtered)*threshold_factor
+    
+    #apply thresholding, to get where the focus metric is significant
+    as_integer_array=(filtered>threshold).astype('uint8')
+    ret,thresh = cv2.threshold(as_integer_array,0,255,cv2.THRESH_BINARY)
+        
+    #apply closing of thresholds, to get more uniform shapes
+    closing_kernel = np.ones((closing_kernel,closing_kernel), dtype=np.uint8)
+    closing = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, closing_kernel)
+
+    #Calculate the contours in the thresholded image
+    contours,hierarchy=cv2.findContours(closing, cv2.RETR_TREE,   cv2.CHAIN_APPROX_SIMPLE)
+
+    #Cut out a rectangle around the contours found, with "extra" on the sides
+    cut_from=image.copy()
+
+    metrics=[]
+    
+    extra=0.5
+
+    for c_index,contour in enumerate(contours):
+        
+        #finding enclosing rectangle around countours
+        x,y,w,h = cv2.boundingRect(contour)
+        
+        if hierarchy[0,c_index,3]<0:
+            
+            #only do cutouts larger that this
+            rectangle_size=w*h
+            smallest_size=(smallest_size_um2*scaling*scaling)
+            if rectangle_size>smallest_size:
+
+                input_h=cut_from.shape[0]
+                input_w=cut_from.shape[1]
+                
+                y_min=int(y-extra*h)
+                y_min=max(y_min,0) 
+                y_max=min(int(y+extra*h+h),input_h) 
+                x_min=max(int(x-extra*w),0)
+                x_max=int(x+extra*w+w)
+                x_max=min(x_max,input_w)
+                
+                #cutting out the part
+                image_i = cut_from[y_min:
+                       y_max,
+                       x_min:
+                       x_max]
+                metric,_=GD_metric(image_i,d_um=d_um,scaling_factor=scaling)
+                
+                metrics.append(metric)
+
+   
+    return metrics
+
+
 
 
 def do_stuff(full_path):
