@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import h5py
 
 
 class Series(object):
@@ -582,6 +583,17 @@ class Series(object):
         np.savetxt(path + '/' + self.date + '_measuredpos.txt', data,
                    header=description_line, fmt='%.4e')
 
+    def save_hdf5_file(self,path):
+        filename=path + '/' + self.date.replace(" ", "_") + '_all_data.h5'
+        print(filename)
+        hf = h5py.File(filename, 'w')
+        hf.create_dataset('MC/J_MC_matrix', data=self.J_MC_matrix_at_measured)
+        hf.create_dataset('MC/T_MC_matrix', data=self.T_MC_matrix_at_measured)
+        hf.create_dataset('MC/t_MC_matrix', data=self.t_MC_matrix_at_measured)
+        hf.create_dataset('MC/fractions_MC_matrix', data=self.fractions_MC_matrix_at_measured)
+        hf.create_dataset('MC/type_fractions', data=self.type_fraction_MC_matrix_at_measured)       
+        hf.close()
+        
     def plot_measured_T_vs_t(self, ax=None, **kwargs):
         if ax == None:
             plt.figure()
