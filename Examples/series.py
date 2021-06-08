@@ -140,20 +140,27 @@ class Series(object):
                                          self.fractions)
         
 
-    def calculate_errors(self, percentile=5, trials=1000, do_J=False):
+    def calculate_errors(self, percentile=5, trials=1000, do_J=True):
+        '''
+        input:
+        percentile - Percentiles for the Monte Carlo result to store. 
+                     The percent that is removed from the bottom to calculate the "low" 
+                     as well as the percent that is removed at the top to calculate "high"
+        trials - the number of trials to run 
+        '''
         # for the matrix varibles:
 
         self.trials = trials
 
-        assert percentile > 0 and percentile <= 50, "percentile must be >0 and <=50"
+        assert percentile > 0 and percentile < 50, "percentile must be >0 and <50"
         self.percentiles = (percentile, 100-percentile)
 
         self.run_MC_for_only_T(trials,do_J=do_J)
 
         # high and low limits
-        self.low_T_at_measured = np.percentile(
+        self.low_T_at_measured = np.nanpercentile(
             self.T_MC_matrix_at_measured, q=percentile, axis=0)
-        self.high_T_at_measured = np.percentile(
+        self.high_T_at_measured = np.nanpercentile(
             self.T_MC_matrix_at_measured, q=100-percentile, axis=0)
         # errors for plotting
         self.low_T_err_at_measured = np.subtract(
@@ -162,9 +169,9 @@ class Series(object):
             self.high_T_at_measured, self.ideal_T_at_measured)
 
         # high and low limits
-        self.low_t_at_measured = np.percentile(
+        self.low_t_at_measured = np.nanpercentile(
             self.t_MC_matrix_at_measured, q=percentile, axis=0)
-        self.high_t_at_measured = np.percentile(
+        self.high_t_at_measured = np.nanpercentile(
             self.t_MC_matrix_at_measured, q=100-percentile, axis=0)
         # errors for plotting
         self.low_t_err_at_measured = np.subtract(
@@ -173,9 +180,9 @@ class Series(object):
             self.high_t_at_measured, self.ideal_t_at_measured)
 
         # high and low limits
-        self.low_v_at_measured = np.percentile(
+        self.low_v_at_measured = np.nanpercentile(
             self.v_MC_matrix_at_measured, q=percentile, axis=0)
-        self.high_v_at_measured = np.percentile(
+        self.high_v_at_measured = np.nanpercentile(
             self.v_MC_matrix_at_measured, q=100-percentile, axis=0)
         # errors for plotting
         self.low_v_err_at_measured = np.subtract(
@@ -190,24 +197,24 @@ class Series(object):
             ####### OLD METHOD #######
             
             # high and low limits
-            self.low_J_at_calculated = np.percentile(self.J_MC_matrix, q=percentile, axis=0)
-            self.high_J_at_calculated = np.percentile(
+            self.low_J_at_calculated = np.nanpercentile(self.J_MC_matrix, q=percentile, axis=0)
+            self.high_J_at_calculated = np.nanpercentile(
                 self.J_MC_matrix, q=100-percentile, axis=0)
             # errors for plotting
             self.low_J_err_at_calculated = np.subtract(self.ideal_J_at_calculated, self.low_J_at_calculated)
             self.high_J_err_at_calculated = np.subtract(self.high_J_at_calculated, self.ideal_J_at_calculated)
             
             ####### NEW METHOD #######
-            self.low_J = np.percentile(self.J_MC_matrix_at_measured, q=percentile, axis=0)
-            self.high_J = np.percentile(
+            self.low_J = np.nanpercentile(self.J_MC_matrix_at_measured, q=percentile, axis=0)
+            self.high_J = np.nanpercentile(
                 self.J_MC_matrix_at_measured, q=100-percentile, axis=0)
             # errors for plotting
             self.low_J_err = np.subtract(self.ideal_J, self.low_J)
             self.high_J_err = np.subtract(self.high_J, self.ideal_J)
 
             # high and low limits
-            self.low_T = np.percentile(self.T_MC_matrix, q=percentile, axis=0)
-            self.high_T = np.percentile(
+            self.low_T = np.nanpercentile(self.T_MC_matrix, q=percentile, axis=0)
+            self.high_T = np.nanpercentile(
                 self.T_MC_matrix, q=100-percentile, axis=0)
             # errors for plotting
             self.low_T_err = np.subtract(
@@ -216,8 +223,8 @@ class Series(object):
                 self.high_T, self.ideal_T_at_calculated)
 
             # high and low limits
-            self.low_t = np.percentile(self.t_MC_matrix, q=percentile, axis=0)
-            self.high_t = np.percentile(
+            self.low_t = np.nanpercentile(self.t_MC_matrix, q=percentile, axis=0)
+            self.high_t = np.nanpercentile(
                 self.t_MC_matrix, q=100-percentile, axis=0)
             # errors for plotting
             self.low_t_err = np.subtract(
@@ -226,8 +233,8 @@ class Series(object):
                 self.high_t, self.ideal_t_at_calculated)
 
             # high and low limits
-            self.low_v = np.percentile(self.v_MC_matrix, q=percentile, axis=0)
-            self.high_v = np.percentile(
+            self.low_v = np.nanpercentile(self.v_MC_matrix, q=percentile, axis=0)
+            self.high_v = np.nanpercentile(
                 self.v_MC_matrix, q=100-percentile, axis=0)
             # errors for plotting
             self.low_v_err = np.subtract(self.ideal_v, self.low_v)
@@ -316,6 +323,7 @@ class Series(object):
     
     def calculate_J(self, q, s, d, l_1, l_2, f_1, f_2):
         '''
+        Old method used in Laksmono. Don't use unless for comparisons. 
         input is observables, output is J in unit of 1/(s m^3). 
 
         please use 
@@ -378,13 +386,18 @@ class Series(object):
 
     def randomize_droplet_type(self, observed_fractions_array, total_counts):
         '''
+        This is essentially ONE sampling from the multinominal distribution. 
+        ONE sampling from the multinominal distribution is a repeated sampling
+        of the categorical distribution. 
+        
+        
         input:
         observed_fractions_array  : array of fraction of all types including water 
-        total_counts              : total number fo droplets
+        total_counts              : total number of focused droplets
 
         output:
         randomized_fraction_array :randomized fractions 
-        assigned_counts           :radnomized counts
+        assigned_counts           :randomized counts
 
 
         Example:
