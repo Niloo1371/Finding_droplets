@@ -9,4 +9,4 @@ This code will try different thresholds for a 2d image and will cut out the regi
 - File called “series.py” should be in the same folder since it should be loaded into the “Example_notebook_for_analysis.ipynb” 
 - Read different interpolation files for temperature vs time in h5 format for different droplet sizes (the files are in the folder called Temperature_sims_and_interpolation and they are called as “t_calib_xx.h5", xx is the droplet size)
 - Running this notebook gives the files in forms of “xxxx_with_types_measuredpos.txt” where xxxx is the date of the experiment.
-- These txt files then can be read in the notebook called “Jnuc_fits.ipynb” for further analysis.
+- These txt files then can be read in the notebook called “Jnuc_fits.ipynb” in Example folder for further analysis to do nucleation rate fitting curves.
