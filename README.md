@@ -1,2 +1,12 @@
 # Finding_droplets
 This code will try different thresholds for a 2d image and will cut out the regions that contain objects. Also checks if it is a grey or color image.
+
+# Monte Carlo simulation for error estimation -->
+
+# In order to generate the MC files:
+
+- Use the notebook called “Example_notebook_for_analysis” (note that cv2 in this notebook is not needed so you can comment it out if you want).
+- File called “series.py” should be in the same folder
+- Read different temperature vs time h5 files for different droplet sizes (the files are in the folder called Temperature_sims_and_interpolation and they are called as “t_calib_xx.h5", xx is the droplet size)
+- Running this notebook gives the files in forms of “xxxx_with_types_measuredpos.txt” where xxxx is the date of experiment.
+- These txt files then can be read in the notebook called “Jnuc_fits.ipynb”
